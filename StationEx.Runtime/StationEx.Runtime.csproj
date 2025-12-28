@@ -57,11 +57,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\StationEx.Sdk\StationEx.Sdk\StationEx.Sdk.csproj">
-      <Project>{d873c36d-bdaa-12de-c6f4-a29fbb84d130}</Project>
+    <ProjectReference Include="..\StationEx.Sdk\StationEx.Sdk.csproj">
+      <Project>{bfbab21e-c933-58ca-299f-40722bba2951}</Project>
       <Name>StationEx.Sdk</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
