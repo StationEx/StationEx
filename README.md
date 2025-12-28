@@ -18,6 +18,10 @@ A feature is a small, configurable piece of functionality. One assembly can cont
 
 A package is a curated collection of features with specific configuration values. Package authors select features and provide configuration overrides to create a cohesive gameplay experience.
 
+## Support
+
+The project is community supported. Please join us on the [StationEx Discord](https://discord.com/invite/6g9hMZQ864).
+
 ## License
 
 All components of this project are licensed under [The MIT License](https://opensource.org/license/mit) and are attributed to all of the authors.
