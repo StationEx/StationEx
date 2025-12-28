@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../StationEx.Sdk/StationEx.Sdk/StationEx.Sdk.csproj" />
+  <Project Path="StationEx.Runtime/StationEx.Runtime.csproj" Id="9a2773ce-ee0b-4934-8983-99cea11406f0" />
+  <Project Path="StationEx/StationEx.csproj" />
+</Solution>
