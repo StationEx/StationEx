@@ -1,2 +1,2 @@
-# StationEx SDK Authors
+# StationEx Authors
 [Michael Gray](https://github.com/michaeljgray)
