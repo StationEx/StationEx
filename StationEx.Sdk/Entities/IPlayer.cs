@@ -6,5 +6,10 @@
         {
             get;
         }
+
+        string Name
+        {
+            get;
+        }
     }
 }
