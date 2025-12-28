@@ -20,4 +20,4 @@ A package is a curated collection of features with specific configuration values
 
 ## License
 
-All components of this project are licensed under [The MIT License](https://opensource.org/license/mit) and are attributed all of the authors.
+All components of this project are licensed under [The MIT License](https://opensource.org/license/mit) and are attributed to all of the authors.
