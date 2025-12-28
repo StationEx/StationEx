@@ -1,6 +1,6 @@
 ﻿namespace StationEx.Runtime.Integration
 {
-    internal enum IntegrationPointType
+    internal enum IntegrationType
     {
         Before,
         After,

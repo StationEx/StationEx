@@ -20,7 +20,7 @@
 
         public IEnumerator<IPlayer> GetEnumerator()
         {
-
+            throw new NotImplementedException();
         }
     }
 }

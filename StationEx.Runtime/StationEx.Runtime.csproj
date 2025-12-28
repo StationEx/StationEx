@@ -41,12 +41,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Adapters\EntityStateAdapter.cs" />
+    <Compile Include="Adapters\HumanAdapter.cs" />
     <Compile Include="Collections\PlayerCollection.cs" />
+    <Compile Include="Entities\Player.cs" />
     <Compile Include="FeatureContext.cs" />
-    <Compile Include="Integration\IntegrationPointAttribute.cs" />
-    <Compile Include="Integration\IntegrationPointType.cs" />
+    <Compile Include="Integration\FieldBindingAttribute.cs" />
+    <Compile Include="Integration\InstanceParameterBindingAttribute.cs" />
+    <Compile Include="Integration\IntegrationAttribute.cs" />
+    <Compile Include="Integration\ParameterBindingAttribute.cs" />
+    <Compile Include="Integration\IntegrationType.cs" />
     <Compile Include="Integration\PlayerIntegration.cs" />
+    <Compile Include="Integration\PropertyBindingAttribute.cs" />
+    <Compile Include="Integration\ReturnParameterBinding.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\StationEx.Sdk\StationEx.Sdk\StationEx.Sdk.csproj">
+      <Project>{d873c36d-bdaa-12de-c6f4-a29fbb84d130}</Project>
+      <Name>StationEx.Sdk</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
