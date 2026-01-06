@@ -6,7 +6,7 @@
     internal sealed class IntegrationAttribute : Attribute
     {
         private readonly IntegrationType type;
-        private readonly string assembly;
+        private readonly string module;
         private readonly string method;
 
         public IntegrationType Type
@@ -17,11 +17,11 @@
             }
         }
 
-        public string Assembly
+        public string Module
         {
             get
             {
-                return this.assembly;
+                return this.module;
             }
         }
 
@@ -33,10 +33,10 @@
             }
         }
 
-        public IntegrationAttribute(IntegrationType type, string assembly, string method)
+        public IntegrationAttribute(IntegrationType type, string module, string method)
         {
             this.type = type;
-            this.assembly = assembly;
+            this.module = module;
             this.method = method;
         }
     }
