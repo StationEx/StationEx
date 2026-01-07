@@ -10,16 +10,10 @@
 
     internal static class PlayerIntegration
     {
-        [Integration(IntegrationMode.After, "Assembly-CSharp.dll", "Assets.Scripts.Objects.Entities.Human", "OnStateChanged")]
+        [Integration(IntegrationMode.After, "Assembly-CSharp.dll", "Assets.Scripts.Objects.Entities.Human", "System.Void Assets.Scripts.Objects.Entities.Human::OnStateChanged()")]
         public static void PlayerStateChanged([InstanceParameterBinding] HumanAdapter instance)
         {
             // Example use case
-        }
-
-        [Integration(IntegrationMode.After, "Assembly-CSharp.dll", "Assets.Scripts.Objects.Entities.Human", "StateChangedToNotAlive")]
-        public static void PlayerDestroyed([InstanceParameterBinding] HumanAdapter instance)
-        {
-            // Example usecase
         }
     }
 }
