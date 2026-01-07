@@ -3,71 +3,110 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Text;
     using Mono.Cecil;
+    using Mono.CompilerServices.SymbolWriter;
 
     internal sealed class AssemblyPatch
     {
-        private const string IntegrationAttributeTypeName = "StationEx.Runtime.Integration.IntegrationAttribute";
-
-        private static bool TryGetIntegrationIntent(MethodDefinition methodDefinition, [NotNullWhen(true)] out IntegrationIntent? intent)
+        private static bool IsValidIntegrationAttribute(CustomAttribute attribute)
         {
-            if (methodDefinition.IsStatic)
+            return
+                attribute.AttributeType.Module.Name == "StationEx.Runtime.dll" &&
+                attribute.AttributeType.FullName == "StationEx.Runtime.Integration.IntegrationAttribute" &&
+                attribute.ConstructorArguments.Count == 4 &&
+                attribute.ConstructorArguments[0].Type.FullName == "StationEx.Runtime.Integration.IntegrationMode" &&
+                attribute.ConstructorArguments[1].Type.FullName == "System.String" &&
+                attribute.ConstructorArguments[2].Type.FullName == "System.String" &&
+                attribute.ConstructorArguments[3].Type.FullName == "System.String";
+        }
+
+        private static bool TryGetIntegrationDescription(MethodDefinition method, [NotNullWhen(true)] out IntegrationDescription? description)
+        {
+            if (method.IsStatic)
             {
-                foreach (CustomAttribute customAttribute in methodDefinition.CustomAttributes)
+                foreach (CustomAttribute attribute in method.CustomAttributes)
                 {
-                    if (customAttribute.AttributeType.FullName == IntegrationAttributeTypeName)
+                    if (IsValidIntegrationAttribute(attribute))
                     {
-                        intent = new IntegrationIntent(
-                            methodDefinition,
-                            (int)customAttribute.ConstructorArguments[0].Value,
-                            (string)customAttribute.ConstructorArguments[1].Value,
-                            (string)customAttribute.ConstructorArguments[2].Value);
+                        description = new IntegrationDescription(
+                            (int)attribute.ConstructorArguments[0].Value,
+                            (string)attribute.ConstructorArguments[1].Value,
+                            (string)attribute.ConstructorArguments[2].Value,
+                            (string)attribute.ConstructorArguments[3].Value);
 
                         return true;
                     }
                 }
             }
 
-            intent = null;
+            description = null;
             return false;
         }
 
-        private static List<IntegrationIntent> GetIntegrationIntents(AssemblyDefinition assembly, AssemblyDefinition target)
+        private static bool TryGetIntegration(MethodDefinition sourceMethod, IntegrationDescription description, AssemblyDefinition targetAssembly, [NotNullWhen(true)] out Integration? integration)
         {
-            List<IntegrationIntent> intents = new List<IntegrationIntent>();
-
-            foreach (ModuleDefinition moduleDefinition in assembly.Modules)
+            ModuleDefinition? targetModule = targetAssembly.Modules.SingleOrDefault(module => module.Name == description.TargetModuleName);
+            if (targetModule is null)
             {
-                foreach (TypeDefinition typeDefinition in moduleDefinition.Types)
+                integration = null;
+                return false;
+            }
+
+            TypeDefinition? targetType = targetModule.Types.SingleOrDefault(type => type.FullName == description.TargetTypeName);
+            if (targetType is null)
+            {
+                integration = null;
+                return false;
+            }
+
+            MethodDefinition? targetMethod = targetType.Methods.SingleOrDefault(method => method.Name == description.TargetMethodName);
+            if (targetMethod is null)
+            {
+                integration = null;
+                return false;
+            }
+
+            integration = new Integration((IntegrationType)description.Mode, sourceMethod, targetMethod);
+            return true;
+        }
+
+        private static List<Integration> GetIntegrations(AssemblyDefinition assembly, AssemblyDefinition target)
+        {
+            List<Integration> integrations = new List<Integration>();
+
+            foreach (ModuleDefinition sourceModule in assembly.Modules)
+            {
+                foreach (TypeDefinition sourceType in sourceModule.Types)
                 {
-                    foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
+                    foreach (MethodDefinition sourceMethod in sourceType.Methods)
                     {
-                        IntegrationIntent? intent;
-                        if (!TryGetIntegrationIntent(methodDefinition, out intent))
+                        if (TryGetIntegrationDescription(sourceMethod, out IntegrationDescription? description))
                         {
-                            continue;
+                            if (TryGetIntegration(sourceMethod, description, target, out Integration? integration))
+                            {
+                                integrations.Add(integration);
+                            }
                         }
-
-                        if (intent.TargetModuleName != target.MainModule.Name)
-                        {
-                            continue;
-                        }
-
-                        intents.Add(intent);
                     }
                 }
             }
 
-            return intents;
+            return integrations;
+        }
+
+        private static void ApplyStaticIntegration(AssemblyDefinition source, AssemblyDefinition target, Integration integration)
+        {
+
         }
 
         public static void ApplyStaticIntegrations(AssemblyDefinition source, AssemblyDefinition target)
         {
-            List<IntegrationIntent> intents = GetIntegrationIntents(source, target);
-            foreach (IntegrationIntent intent in intents)
+            List<Integration> integrations = GetIntegrations(source, target);
+            foreach (Integration integration in integrations)
             {
-
+                ApplyStaticIntegration(source, target, integration);
             }
         }
     }

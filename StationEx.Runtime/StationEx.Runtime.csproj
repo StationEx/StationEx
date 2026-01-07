@@ -50,7 +50,7 @@
     <Compile Include="Integration\InstanceParameterBindingAttribute.cs" />
     <Compile Include="Integration\IntegrationAttribute.cs" />
     <Compile Include="Integration\ParameterBindingAttribute.cs" />
-    <Compile Include="Integration\IntegrationType.cs" />
+    <Compile Include="Integration\IntegrationMode.cs" />
     <Compile Include="Integration\PlayerIntegration.cs" />
     <Compile Include="Integration\PropertyBindingAttribute.cs" />
     <Compile Include="Integration\ReturnParameterBinding.cs" />

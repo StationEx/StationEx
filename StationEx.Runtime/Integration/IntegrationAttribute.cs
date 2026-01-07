@@ -5,15 +5,16 @@
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     internal sealed class IntegrationAttribute : Attribute
     {
-        private readonly IntegrationType type;
+        private readonly IntegrationMode mode;
         private readonly string module;
+        private readonly string type;
         private readonly string method;
 
-        public IntegrationType Type
+        public IntegrationMode Mode
         {
             get
             {
-                return this.type;
+                return this.mode;
             }
         }
 
@@ -25,6 +26,14 @@
             }
         }
 
+        public string Type
+        {
+            get
+            {
+                return this.type;
+            }
+        }
+
         public string Method
         {
             get
@@ -33,10 +42,11 @@
             }
         }
 
-        public IntegrationAttribute(IntegrationType type, string module, string method)
+        public IntegrationAttribute(IntegrationMode mode, string module, string type, string method)
         {
-            this.type = type;
+            this.mode = mode;
             this.module = module;
+            this.type = type;
             this.method = method;
         }
     }

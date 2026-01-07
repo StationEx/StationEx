@@ -10,19 +10,13 @@
 
     internal static class PlayerIntegration
     {
-        [Integration(IntegrationType.After, "Assembly-CSharp.dll", "Assets.Scripts.Objects.Entities.Human.OnStateChanged")]
+        [Integration(IntegrationMode.After, "Assembly-CSharp.dll", "Assets.Scripts.Objects.Entities.Human", "OnStateChanged")]
         public static void PlayerStateChanged([InstanceParameterBinding] HumanAdapter instance)
         {
             // Example use case
         }
 
-        [Integration(IntegrationType.After, "Assembly-CSharp.dll", "Assets.Scripts.Objects.Entities.Human.CreateCharacter")]
-        public static void PlayerCreated([ReturnParameterBinding(false)] HumanAdapter result)
-        {
-            // Example use case
-        }
-
-        [Integration(IntegrationType.After, "Assembly-CSharp.dll", "Assets.Scripts.Objects.Entities.Human.StateChangedToNotAlive")]
+        [Integration(IntegrationMode.After, "Assembly-CSharp.dll", "Assets.Scripts.Objects.Entities.Human", "StateChangedToNotAlive")]
         public static void PlayerDestroyed([InstanceParameterBinding] HumanAdapter instance)
         {
             // Example usecase
