@@ -6,6 +6,7 @@
     using System.Linq;
     using System.Text;
     using Mono.Cecil;
+    using Mono.Cecil.Rocks;
     using Mono.CompilerServices.SymbolWriter;
 
     internal sealed class AssemblyPatch
@@ -96,18 +97,82 @@
             return integrations;
         }
 
-        private static void ApplyStaticIntegration(AssemblyDefinition source, AssemblyDefinition target, Integration integration)
+        private static void DeleteRuntimeReference(AssemblyDefinition target)
+        {
+            AssemblyNameReference? stationExRuntimeReference = target.MainModule.AssemblyReferences.SingleOrDefault(reference => reference.Name == "StationEx.Runtime");
+            if (stationExRuntimeReference is not null)
+            {
+                target.MainModule.AssemblyReferences.Remove(stationExRuntimeReference);
+            }
+        }
+
+        private static void DeleteStaticIntegrations(AssemblyDefinition target)
+        {
+            TypeDefinition? integrationCoreType = target.MainModule.Types.SingleOrDefault(type => type.FullName == "StationEx.Generated.IntegrationCore");
+            if (integrationCoreType is not null)
+            {
+                target.MainModule.Types.Remove(integrationCoreType);
+            }
+        }
+
+        private static void ApplyRuntimeReference(AssemblyDefinition source, AssemblyDefinition target)
+        {
+            AssemblyNameReference stationExRuntimeReference = source.MainModule.AssemblyReferences.Single(reference => reference.Name == "StationEx.Runtime");
+            target.MainModule.AssemblyReferences.Add(stationExRuntimeReference);
+        }
+
+        private static void CopyStaticIntegrationHandlers(AssemblyDefinition target, IEnumerable<Integration> integrations)
+        {
+            TypeDefinition generatedCodeAttribute = target.MainModule.Types.Single(type => type.FullName == "StationEx.Runtime.GeneratedCodeAttribute");
+            MethodDefinition generatedCodeAttributeConstructor = generatedCodeAttribute.GetConstructors().Single();
+
+            TypeDefinition integrationCoreType = new TypeDefinition("StationEx.Generated", "IntegrationCore", TypeAttributes.NotPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            integrationCoreType.CustomAttributes.Add(new CustomAttribute(generatedCodeAttributeConstructor));
+
+            foreach (Integration sourceIntegration in integrations)
+            {
+                MethodDefinition targetHandler = new MethodDefinition(
+                    $"StationEx.Generated.{sourceIntegration.Source.Name}",
+                    MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
+                    sourceIntegration.Source.ReturnType);
+
+                foreach (ParameterDefinition sourceHandlerParameter in sourceIntegration.Source.Parameters)
+                {
+                    ParameterDefinition targetHandlerParameter = new ParameterDefinition(
+                        sourceHandlerParameter.Name,
+                        sourceHandlerParameter.Attributes,
+                        sourceHandlerParameter.ParameterType);
+                }
+
+                targetHandler.Body = sourceIntegration.Source.Body;
+
+                integrationCoreType.Methods.Add(targetHandler);
+            }
+        }
+
+        private static void ApplyStaticIntegrations(AssemblyDefinition source, AssemblyDefinition target, Integration integration)
         {
 
         }
 
-        public static void ApplyStaticIntegrations(AssemblyDefinition source, AssemblyDefinition target)
+        private static void ApplyStaticIntegrations(AssemblyDefinition source, AssemblyDefinition target)
         {
             List<Integration> integrations = GetIntegrations(source, target);
+            CopyStaticIntegrationHandlers(target, integrations);
+
             foreach (Integration integration in integrations)
             {
-                ApplyStaticIntegration(source, target, integration);
+                ApplyStaticIntegrations(source, target, integration);
             }
+        }
+
+        public static void ApplyRuntimeIntegration(AssemblyDefinition source, AssemblyDefinition target)
+        {
+            DeleteStaticIntegrations(target);
+            DeleteRuntimeReference(target);
+
+            ApplyRuntimeReference(source, target);
+            ApplyStaticIntegrations(source, target);
         }
     }
 }
