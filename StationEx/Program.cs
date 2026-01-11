@@ -25,11 +25,13 @@
 
         private static void Main(string[] parameters)
         {
+            SourceAssemblyResolver.AddSearchDirectory(Path.GetDirectoryName(parameters[0]));
             TargetAssemblyResolver.AddSearchDirectory(Path.GetDirectoryName(parameters[1]));
 
             AssemblyDefinition source = AssemblyDefinition.ReadAssembly(parameters[0], SourceReaderOptions);
             AssemblyDefinition target = AssemblyDefinition.ReadAssembly(parameters[1], TargetReaderOptions);
 
+            AssemblyPatch.DeleteRuntimeIntegration(target);
             AssemblyPatch.ApplyRuntimeIntegration(source, target);
 
             target.Write(parameters[2]);
