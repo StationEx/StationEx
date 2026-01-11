@@ -54,6 +54,7 @@
     <Compile Include="Integration\PlayerIntegration.cs" />
     <Compile Include="Integration\PropertyBindingAttribute.cs" />
     <Compile Include="Integration\ReturnParameterBinding.cs" />
+    <Compile Include="Integration\TypeAdapterAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
