@@ -1,22 +1,24 @@
 ﻿namespace StationEx
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Mono.Cecil;
+    using StationEx.Constants;
 
     internal static class IntegrationHelper
     {
         private static bool IsIntegrationAttribute(CustomAttribute attribute)
         {
             return
-                attribute.AttributeType.Module.Name == "StationEx.Runtime.dll" &&
-                attribute.AttributeType.FullName == "StationEx.Runtime.Integration.IntegrationAttribute" &&
+                attribute.AttributeType.Module.Name == ModuleNames.StationExRuntime &&
+                attribute.AttributeType.FullName == TypeNames.StationExRuntimeIntegrationAttributeFull &&
                 attribute.ConstructorArguments.Count == 4 &&
-                attribute.ConstructorArguments[0].Type.FullName == "StationEx.Runtime.Integration.IntegrationMode" &&
-                attribute.ConstructorArguments[1].Type.FullName == "System.String" &&
-                attribute.ConstructorArguments[2].Type.FullName == "System.String" &&
-                attribute.ConstructorArguments[3].Type.FullName == "System.String";
+                attribute.ConstructorArguments[0].Type.FullName == TypeNames.StationExRuntimeIntegrationModeFull &&
+                attribute.ConstructorArguments[1].Type.FullName == typeof(String).FullName &&
+                attribute.ConstructorArguments[2].Type.FullName == typeof(String).FullName &&
+                attribute.ConstructorArguments[3].Type.FullName == typeof(String).FullName;
         }
 
         private static bool TryGetIntegrationDescription(MethodDefinition method, [NotNullWhen(true)] out IntegrationDescription? description)
