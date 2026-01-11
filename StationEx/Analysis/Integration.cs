@@ -1,4 +1,4 @@
-﻿namespace StationEx
+﻿namespace StationEx.Analysis
 {
     using Mono.Cecil;
 

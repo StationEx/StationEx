@@ -1,4 +1,4 @@
-﻿namespace StationEx
+﻿namespace StationEx.Analysis
 {
     using System;
     using System.Collections.Generic;

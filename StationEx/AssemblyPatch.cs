@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using Mono.Cecil;
+    using StationEx.Analysis;
     using StationEx.Constants;
 
     internal static class AssemblyPatch
