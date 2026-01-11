@@ -1,20 +1,38 @@
 ﻿namespace StationEx
 {
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.IO;
+    using System.Security.Cryptography;
+    using System.Xml.Linq;
     using Mono.Cecil;
 
     internal static class Program
     {
-        private static readonly ReaderParameters AssemblyReaderParameters = new ReaderParameters()
+        private static readonly DefaultAssemblyResolver SourceAssemblyResolver = new DefaultAssemblyResolver();
+        private static readonly DefaultAssemblyResolver TargetAssemblyResolver = new DefaultAssemblyResolver();
+
+        private static readonly ReaderParameters SourceReaderOptions = new ReaderParameters()
         {
-            AssemblyResolver = new DefaultAssemblyResolver()
+            AssemblyResolver = SourceAssemblyResolver
+        };
+
+        private static readonly ReaderParameters TargetReaderOptions = new ReaderParameters()
+        {
+            AssemblyResolver = TargetAssemblyResolver
         };
 
         private static void Main(string[] parameters)
         {
-            AssemblyDefinition source = AssemblyDefinition.ReadAssembly(parameters[0], AssemblyReaderParameters);
-            AssemblyDefinition target = AssemblyDefinition.ReadAssembly(parameters[1], AssemblyReaderParameters);
+            TargetAssemblyResolver.AddSearchDirectory(Path.GetDirectoryName(parameters[1]));
 
-            AssemblyPatch.ApplyStaticIntegrations(source, target);
+            AssemblyDefinition source = AssemblyDefinition.ReadAssembly(parameters[0], SourceReaderOptions);
+            AssemblyDefinition target = AssemblyDefinition.ReadAssembly(parameters[1], TargetReaderOptions);
+
+            AssemblyPatch.ApplyRuntimeIntegration(source, target);
+
+            target.Write(parameters[2]);
         }
     }
 }

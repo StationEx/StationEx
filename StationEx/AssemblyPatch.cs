@@ -9,7 +9,7 @@
     using Mono.Cecil.Rocks;
     using Mono.CompilerServices.SymbolWriter;
 
-    internal sealed class AssemblyPatch
+    internal static class AssemblyPatch
     {
         private static bool IsValidIntegrationAttribute(CustomAttribute attribute)
         {
@@ -62,7 +62,7 @@
                 return false;
             }
 
-            MethodDefinition? targetMethod = targetType.Methods.SingleOrDefault(method => method.Name == description.TargetMethodName);
+            MethodDefinition? targetMethod = targetType.Methods.SingleOrDefault(method => method.FullName == description.TargetMethodName);
             if (targetMethod is null)
             {
                 integration = null;
@@ -115,19 +115,15 @@
             }
         }
 
-        private static void ApplyRuntimeReference(AssemblyDefinition source, AssemblyDefinition target)
+        private static void ApplyRuntimeReference(AssemblyDefinition target)
         {
-            AssemblyNameReference stationExRuntimeReference = source.MainModule.AssemblyReferences.Single(reference => reference.Name == "StationEx.Runtime");
-            target.MainModule.AssemblyReferences.Add(stationExRuntimeReference);
+            AssemblyNameReference reference = new AssemblyNameReference("StationEx.Runtime", new Version("1.0.0.0"));
+            target.MainModule.AssemblyReferences.Add(reference);
         }
 
         private static void CopyStaticIntegrationHandlers(AssemblyDefinition target, IEnumerable<Integration> integrations)
         {
-            TypeDefinition generatedCodeAttribute = target.MainModule.Types.Single(type => type.FullName == "StationEx.Runtime.GeneratedCodeAttribute");
-            MethodDefinition generatedCodeAttributeConstructor = generatedCodeAttribute.GetConstructors().Single();
-
             TypeDefinition integrationCoreType = new TypeDefinition("StationEx.Generated", "IntegrationCore", TypeAttributes.NotPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
-            integrationCoreType.CustomAttributes.Add(new CustomAttribute(generatedCodeAttributeConstructor));
 
             foreach (Integration sourceIntegration in integrations)
             {
@@ -141,13 +137,16 @@
                     ParameterDefinition targetHandlerParameter = new ParameterDefinition(
                         sourceHandlerParameter.Name,
                         sourceHandlerParameter.Attributes,
-                        sourceHandlerParameter.ParameterType);
+                        target.MainModule.ImportReference(sourceHandlerParameter.ParameterType));
+
+                    targetHandler.Parameters.Add(targetHandlerParameter);
                 }
 
                 targetHandler.Body = sourceIntegration.Source.Body;
-
                 integrationCoreType.Methods.Add(targetHandler);
             }
+
+            target.MainModule.Types.Add(integrationCoreType);
         }
 
         private static void ApplyStaticIntegrations(AssemblyDefinition source, AssemblyDefinition target, Integration integration)
@@ -171,7 +170,7 @@
             DeleteStaticIntegrations(target);
             DeleteRuntimeReference(target);
 
-            ApplyRuntimeReference(source, target);
+            ApplyRuntimeReference(target);
             ApplyStaticIntegrations(source, target);
         }
     }
