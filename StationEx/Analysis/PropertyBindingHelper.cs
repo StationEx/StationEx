@@ -24,9 +24,7 @@
             {
                 if (IsPropertyBindingAttribute(attribute))
                 {
-                    description = new PropertyBindingDescription(
-                        (string)attribute.ConstructorArguments[0].Value);
-
+                    description = new PropertyBindingDescription((string)attribute.ConstructorArguments[0].Value);
                     return true;
                 }
             }
@@ -37,15 +35,14 @@
 
         private static bool TryGetPropertyBinding(PropertyDefinition sourceProperty, PropertyBindingDescription description, TypeDefinition targetType, [NotNullWhen(true)] out PropertyBinding? binding)
         {
-            PropertyDefinition? targetProperty = targetType.Properties.SingleOrDefault(property => property.FullName == description.TargetPropertyName);
-            if (targetProperty is null)
+            if (PropertyMapper.TryMapProperty(sourceProperty, targetType, description.TargetPropertyName, out PropertyDefinition? targetProperty))
             {
-                binding = null;
-                return false;
+                binding = new PropertyBinding(sourceProperty, targetProperty);
+                return true;
             }
 
-            binding = new PropertyBinding(sourceProperty, targetProperty);
-            return true;
+            binding = null;
+            return false;
         }
 
         public static List<PropertyBinding> GetPropertyBindings(TypeDefinition sourceType, TypeDefinition targetType)

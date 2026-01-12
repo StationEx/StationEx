@@ -9,30 +9,35 @@
         public long ReferenceId
         {
             get;
+            set;
         }
 
         [PropertyBinding("OwnerClientId")]
         public ulong OwnerClientId
         {
             get;
+            set;
         }
 
         [PropertyBinding("name")]
         public string Name
         {
             get;
+            set;
         }
 
         [FieldBinding("_oldState")]
         public EntityStateAdapter PreviousState
         {
             get;
+            set;
         }
 
         [PropertyBinding("State")]
         public EntityStateAdapter CurrentState
         {
             get;
+            set;
         }
     }
 }
