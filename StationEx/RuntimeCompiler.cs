@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Data;
     using System.Linq;
     using Mono.Cecil;
     using Mono.Cecil.Cil;
@@ -29,7 +30,7 @@
             }
         }
 
-        private static void DeleteStaticIntegrationHandlers(AssemblyDefinition target)
+        private static void DeleteIntegrationCore(AssemblyDefinition target)
         {
             TypeDefinition? integrationCoreType = target.MainModule.Types.SingleOrDefault(type => type.FullName == TypeNames.StationExIntegrationCoreFull);
             if (integrationCoreType is not null)
@@ -40,7 +41,7 @@
 
         private static void DeleteStaticIntegrations(AssemblyDefinition target)
         {
-            DeleteStaticIntegrationHandlers(target);
+            DeleteIntegrationCore(target);
             DeleteTypeAdapters(target);
         }
 
@@ -48,6 +49,15 @@
         {
             AssemblyNameReference reference = new AssemblyNameReference(AssemblyNames.StationExRuntime, Versions.CurrentStationExRuntime);
             target.MainModule.AssemblyReferences.Add(reference);
+        }
+        
+        private static void CreateIntegrationCore(AssemblyDefinition target)
+        {
+            TypeDefinition integrationCoreType = new TypeDefinition(
+                Namespaces.StationExGenerated, TypeNames.StationExIntegrationCore,
+                TypeAttributes.NotPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
+
+            target.MainModule.Types.Add(integrationCoreType);
         }
 
         private static MethodDefinition GenerateAdapterConverter(AssemblyDefinition target, TypeAdapter adapter)
@@ -98,37 +108,51 @@
             target.MainModule.Types.Add(typeAdapterType);
         }
 
-        private static void CreateStaticIntegrationHandlers(AssemblyDefinition target, IEnumerable<Integration> integrations)
+        private static MethodDefinition CreateStaticIntegrationHandler(AssemblyDefinition target, Integration integration)
         {
-            TypeDefinition integrationCoreType = new TypeDefinition(Namespaces.StationExGenerated, TypeNames.StationExIntegrationCore, TypeAttributes.NotPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            MethodDefinition targetHandler = new MethodDefinition(
+                $"{Namespaces.StationExGenerated}.{integration.Source.Name}",
+                MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
+                integration.Source.ReturnType);
 
-            foreach (Integration sourceIntegration in integrations)
+            foreach (ParameterDefinition sourceHandlerParameter in integration.Source.Parameters)
             {
-                MethodDefinition targetHandler = new MethodDefinition(
-                    $"{Namespaces.StationExGenerated}.{sourceIntegration.Source.Name}",
-                    MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
-                    sourceIntegration.Source.ReturnType);
+                ParameterDefinition targetHandlerParameter = new ParameterDefinition(
+                    sourceHandlerParameter.Name,
+                    sourceHandlerParameter.Attributes,
+                    target.MainModule.ImportReference(sourceHandlerParameter.ParameterType));
 
-                foreach (ParameterDefinition sourceHandlerParameter in sourceIntegration.Source.Parameters)
-                {
-                    ParameterDefinition targetHandlerParameter = new ParameterDefinition(
-                        sourceHandlerParameter.Name,
-                        sourceHandlerParameter.Attributes,
-                        target.MainModule.ImportReference(sourceHandlerParameter.ParameterType));
-
-                    targetHandler.Parameters.Add(targetHandlerParameter);
-                }
-
-                targetHandler.Body = sourceIntegration.Source.Body;
-                integrationCoreType.Methods.Add(targetHandler);
+                targetHandler.Parameters.Add(targetHandlerParameter);
             }
 
-            target.MainModule.Types.Add(integrationCoreType);
+            targetHandler.Body = integration.Source.Body;
+            return targetHandler;
+        }
+
+        private static void CreateBeforeCallToHandler(AssemblyDefinition source, AssemblyDefinition target, MethodDefinition handler)
+        {
+
         }
 
         private static void CreateStaticIntegration(AssemblyDefinition source, AssemblyDefinition target, Integration integration)
         {
-            // TODO: Generate invocations in target call sites
+            MethodDefinition handler = CreateStaticIntegrationHandler(target, integration);
+
+            switch (integration.Type)
+            {
+                case IntegrationType.Before:
+                    CreateBeforeCallToHandler(source, target, handler);
+                    break;
+
+                case IntegrationType.After:
+                    throw new NotImplementedException();
+
+                case IntegrationType.Replace:
+                    throw new NotImplementedException();
+
+                default:
+                    throw new ArgumentException("The integration type is not valid.", nameof(integration));
+            }
         }
 
         private static void CreateStaticIntegrations(AssemblyDefinition source, AssemblyDefinition target)
@@ -137,8 +161,8 @@
             List<TypeAdapter> adapters = TypeAdapterHelper.GetTypeAdapters(integrations, target);
 
             CreateTypeAdapters(target, adapters);
-            CreateStaticIntegrationHandlers(target, integrations);
 
+            CreateIntegrationCore(target);
             foreach (Integration integration in integrations)
             {
                 CreateStaticIntegration(source, target, integration);
