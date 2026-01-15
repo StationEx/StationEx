@@ -3,12 +3,17 @@
     using System;
     using System.Collections.Generic;
     using System.Data;
+    using System.Diagnostics;
     using System.Linq;
+    using System.Reflection.Metadata.Ecma335;
     using Mono.Cecil;
     using Mono.Cecil.Cil;
     using Mono.Cecil.Rocks;
     using StationEx.Analysis;
+    using StationEx.Analysis.Extensions;
     using StationEx.Constants;
+    using StationEx.Proxies;
+    using StationEx.Proxies.Extensions;
 
     internal static class RuntimeCompiler
     {
@@ -108,44 +113,88 @@
             target.MainModule.Types.Add(typeAdapterType);
         }
 
-        private static MethodDefinition CreateStaticIntegrationHandler(AssemblyDefinition target, Integration integration)
+        private static IntegrationHandler CreateStaticIntegrationHandler(AssemblyDefinition target, Integration integration)
         {
-            MethodDefinition targetHandler = new MethodDefinition(
+            MethodDefinition integrationMethod = new MethodDefinition(
                 $"{Namespaces.StationExGenerated}.{integration.Source.Name}",
-                MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
+                MethodAttributes.Public | MethodAttributes.Static,
                 integration.Source.ReturnType);
 
-            foreach (ParameterDefinition sourceHandlerParameter in integration.Source.Parameters)
+            int[] integrationToTargetParameterMap = new int[integration.Source.Parameters.Count];
+            for (int i = 0; i < integration.Source.Parameters.Count; ++i)
             {
-                ParameterDefinition targetHandlerParameter = new ParameterDefinition(
-                    sourceHandlerParameter.Name,
-                    sourceHandlerParameter.Attributes,
-                    target.MainModule.ImportReference(sourceHandlerParameter.ParameterType));
+                ParameterDefinition sourceParameter = integration.Source.Parameters[i];
+                if (sourceParameter.IsInstanceBinding())
+                {
+                    if (!integration.Target.HasThis)
+                    {
+                        throw new InvalidInstanceParameterBindingException(integration.Source, integration.Target);
+                    }
 
-                targetHandler.Parameters.Add(targetHandlerParameter);
+                    integrationToTargetParameterMap[i] = 0;
+                    continue;
+                }
+
+                ParameterBindingAttribute? sourceParameterBinding;
+                if (!sourceParameter.TryGetBinding(out sourceParameterBinding))
+                {
+                    throw new MissingParameterBindingException(integration.Source, sourceParameter);
+                }
+
+                bool isTargetParameterFound = false;
+                for (int k = 0; k < integration.Target.Parameters.Count; ++k)
+                {
+                    if (integration.Target.Parameters[k].Name == sourceParameterBinding.Name)
+                    {
+                        isTargetParameterFound = true;
+                        integrationToTargetParameterMap[i] = k;
+                        break;
+                    }
+                }
+
+                if (!isTargetParameterFound)
+                {
+                    // TODO: Throw an exception to indicate we are missing the target of a parameter binding
+                }
+
+                ParameterDefinition integrationParameter = new ParameterDefinition(
+                    sourceParameter.Name,
+                    sourceParameter.Attributes,
+                    target.MainModule.ImportReference(sourceParameter.ParameterType));
+
+                integrationMethod.Parameters.Add(integrationParameter);
             }
 
-            targetHandler.Body = integration.Source.Body;
-            return targetHandler;
+            Debug.Assert(integrationMethod.Parameters.Count == integration.Source.Parameters.Count, "BUG CHECK: The integration source method and integration method have a different number of parameters.");
+
+            integrationMethod.Body = integration.Source.Body;
+
+            return new IntegrationHandler(integrationMethod, integrationToTargetParameterMap);
         }
 
-        private static void CreateBeforeCallToHandler(AssemblyDefinition source, AssemblyDefinition target, MethodDefinition handler)
+        private static void CreateStaticBeforeIntegrationToHandler(Integration integration, IntegrationHandler handler)
         {
+            throw new NotImplementedException();
+        }
 
+        private static void CreateStaticAfterIntegrationToHandler(Integration integration, IntegrationHandler handler)
+        {
+            throw new NotImplementedException();
         }
 
         private static void CreateStaticIntegration(AssemblyDefinition source, AssemblyDefinition target, Integration integration)
         {
-            MethodDefinition handler = CreateStaticIntegrationHandler(target, integration);
+            IntegrationHandler handler = CreateStaticIntegrationHandler(target, integration);
 
             switch (integration.Type)
             {
                 case IntegrationType.Before:
-                    CreateBeforeCallToHandler(source, target, handler);
+                    CreateStaticBeforeIntegrationToHandler(integration, handler);
                     break;
 
                 case IntegrationType.After:
-                    throw new NotImplementedException();
+                    CreateStaticAfterIntegrationToHandler(integration, handler);
+                    break;
 
                 case IntegrationType.Replace:
                     throw new NotImplementedException();
